@@ -4,34 +4,40 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Яндекс Спейс — заставка</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
+  /* тот же Inter, что и в приложении */
+  @font-face { font-family: 'Inter'; font-weight: 700; src: url(../app/fonts/inter-cyrillic-700-normal.woff2) format('woff2'); unicode-range: U+0400-04FF; }
+  @font-face { font-family: 'Inter'; font-weight: 700; src: url(../app/fonts/inter-latin-700-normal.woff2) format('woff2'); }
   html, body { margin: 0; height: 100%; background: #1d1d1d; }
   body { display: flex; align-items: center; justify-content: center; }
-  svg { height: 100vh; width: auto; max-width: 100vw; display: block; }
-  body.capture { background: #FFF6E3; }
-  body.capture svg { width: 1080px; height: 1920px; max-width: none; }
-  text { font-family: Inter, "Inter Display", system-ui, sans-serif; }
+  svg { width: 100vw; height: auto; max-height: 100vh; display: block; }
+  body.capture { background: #fff; }
+  body.capture svg { width: 1920px; height: 1080px; max-height: none; }
+  text { font-family: Inter, system-ui, sans-serif; }
 </style>
 </head>
 <body>
-<svg id="stage" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+<svg id="stage" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <clipPath id="cardClip"><rect x="-240" y="-370" width="480" height="480" rx="44"/></clipPath>
-    <clipPath id="rowClip"><rect x="0" y="0" width="1080" height="1408"/></clipPath>
+    <clipPath id="rowClip"><rect x="0" y="0" width="1920" height="938"/></clipPath>
   </defs>
-  <rect width="1080" height="1920" fill="#FFF6E3"/>
+  <rect width="1920" height="1080" fill="#fff"/>
   <g id="bgDots"></g>
-  <circle id="wipe" cx="540" cy="900" r="0" fill="#FFD83D"/>
+  <g id="header"></g>
+  <circle id="wipe" cx="960" cy="600" r="0" fill="#FFDB4D"/>
+  <circle id="wipe2" cx="960" cy="600" r="0" fill="#fff"/>
   <g id="cards"></g>
   <g id="burst"></g>
   <g id="finale"></g>
 </svg>
 
+<script src="../app/icons.js"></script>
 <script>
-// ---------- palette ----------
-const INK = '#141414';
+// ---------- brand (app/styles.css, app/app.js) ----------
+const INK = '#21201F';
+const YELLOW = '#FFDB4D', SPACE_YELLOW = '#FDBF1F', RED = '#FC3F1D', GREEN = '#2DB84D', BLUE = '#2C6CF6';
+const ICON_SRC = '../app/assets/icon.png';
 const SW = 9; // stroke width, as in the reference doodle
 
 // ---------- easing ----------
@@ -71,13 +77,9 @@ function curlyHair(color, { cx = 0, cy = -300, rx = 112, ry = 118, from = 195, t
   }
   // fringe back across the forehead, smaller curls
   const end = pts[pts.length - 1], start = pts[0];
-  const f = [];
   for (let i = 0; i <= fringeN; i++) {
     const x = lerp(end[0] - 6, start[0] + 6, i / fringeN);
     const y = fringeY + (i % 2 ? 14 : 0) + Math.abs(i - fringeN / 2) * -4;
-    f.push([x, y]);
-  }
-  for (const [x, y] of f) {
     d += ` A26,26 0 0 1 ${x.toFixed(1)},${y.toFixed(1)}`;
   }
   d += ` A40,40 0 0 1 ${start[0].toFixed(1)},${start[1].toFixed(1)} Z`;
@@ -85,6 +87,7 @@ function curlyHair(color, { cx = 0, cy = -300, rx = 112, ry = 118, from = 195, t
 }
 
 // ---------- characters (origin = table top, centre) ----------
+const HIJAB = '#B5545F', HIJAB_DARK = '#8E3B46';
 const CHAR = {
   // long wavy dark hair, beige blazer over a white top, gold pendant
   karina: () => `
@@ -99,23 +102,23 @@ const CHAR = {
     <path d="M88,-250 C128,-200 96,-150 136,-90 C150,-60 128,-20 110,-8 C100,-60 70,-90 76,-150 C80,-190 72,-220 88,-250 Z" fill="#2E1D14" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
     ${eyes(-4, -276)}`,
 
-  // patterned dusty-rose headscarf, round glasses
+  // hijab: snug around the head, framing the face, draped over the shoulders; round glasses
   zarina: () => {
     let dots = '';
-    const spots = [[-120,-330],[-140,-230],[-150,-120],[-120,-40],[-70,-60],[110,-340],[140,-240],[150,-130],[118,-40],[70,-70],[0,-410],[-60,-395],[60,-395],[-30,-100],[35,-110]];
-    for (const [x, y] of spots) dots += `<circle cx="${x}" cy="${y}" r="7" fill="#F2C27A" opacity=".9"/>`;
+    const spots = [[-70,-380],[0,-398],[70,-380],[-98,-320],[98,-320],[-130,-130],[-150,-80],[-105,-60],[125,-120],[150,-70],[95,-55],[-40,-70],[40,-80],[0,-120]];
+    for (const [x, y] of spots) dots += `<circle cx="${x}" cy="${y}" r="6" fill="#F2C27A" opacity=".85"/>`;
     return `
     ${torso('#2A2326')}
-    <rect x="-28" y="-215" width="56" height="70" fill="#fff" stroke="${INK}" stroke-width="${SW}"/>
-    <path d="M-118,-300 C-128,-440 128,-440 118,-300 C128,-220 160,-140 176,60 L-176,60 C-160,-140 -128,-220 -118,-300 Z" fill="#B5545F" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
-    <ellipse cx="0" cy="-286" rx="70" ry="86" fill="#fff" stroke="${INK}" stroke-width="${SW}"/>
-    <path d="M-74,-226 C-50,-176 50,-176 74,-226 C92,-170 60,-136 0,-132 C-60,-136 -92,-170 -74,-226 Z" fill="#B5545F" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
-    <path d="M-150,-60 C-80,-100 40,-90 150,-20" stroke="${INK}" stroke-width="7" fill="none" stroke-linecap="round" opacity=".55"/>
+    <path d="M0,-404 C70,-404 106,-356 106,-296 C106,-246 98,-214 104,-186 C150,-166 176,-120 182,-64 C120,-36 60,-30 0,-30 C-60,-30 -120,-36 -182,-64 C-176,-120 -150,-166 -104,-186 C-98,-214 -106,-246 -106,-296 C-106,-356 -70,-404 0,-404 Z"
+          fill="${HIJAB}" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
     ${dots}
-    ${eyes(0, -280)}
-    <circle cx="-31" cy="-280" r="27" fill="none" stroke="${INK}" stroke-width="6"/>
-    <circle cx="31" cy="-280" r="27" fill="none" stroke="${INK}" stroke-width="6"/>
-    <path d="M-5,-284 Q0,-290 5,-284" stroke="${INK}" stroke-width="6" fill="none"/>`;
+    <path d="M-100,-190 C-60,-150 40,-140 120,-176 M-60,-160 C-20,-110 60,-96 150,-110" stroke="${HIJAB_DARK}" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <ellipse cx="0" cy="-286" rx="72" ry="88" fill="#F3E3D8" stroke="${INK}" stroke-width="7"/>
+    <ellipse cx="0" cy="-276" rx="64" ry="78" fill="#fff" stroke="${INK}" stroke-width="${SW}"/>
+    ${eyes(0, -276)}
+    <circle cx="-30" cy="-276" r="26" fill="none" stroke="${INK}" stroke-width="6"/>
+    <circle cx="30" cy="-276" r="26" fill="none" stroke="${INK}" stroke-width="6"/>
+    <path d="M-5,-280 Q0,-286 5,-280" stroke="${INK}" stroke-width="6" fill="none"/>`;
   },
 
   // brown bob, black leather jacket, burgundy zip top
@@ -140,16 +143,6 @@ const CHAR = {
     ${curlyHair('#A8794C', { rx: 120, ry: 124, n: 10, fringeY: -326 })}
     ${eyes(0, -270)}`,
 
-  // black curly hair, green polo — the reference doodle
-  polo: () => `
-    ${torso('#3D5A20')}
-    ${head()}
-    <path d="M-30,-160 L-70,-150 L-48,-96 L-6,-140 Z M30,-160 L70,-150 L48,-96 L6,-140 Z" fill="#3D5A20" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
-    <circle cx="0" cy="-104" r="7" fill="${INK}"/><circle cx="0" cy="-64" r="7" fill="${INK}"/>
-    ${sleeveLines}
-    ${curlyHair(INK, { rx: 116, ry: 120, n: 8, fringeY: -322, fringeN: 3 })}
-    ${eyes(-14, -272)}`,
-
   // long straight hair with a centre part, oversized beige shirt
   longhair: () => `
     <path d="M-110,-300 C-120,-420 120,-420 110,-300 L124,-30 L-124,-30 Z" fill="#5C3824" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
@@ -164,27 +157,22 @@ const CHAR = {
 // ---------- props ----------
 const PROPS = {
   phone: () => `
-    <g class="bubble">
-      <circle r="50" fill="#fff" stroke="${INK}" stroke-width="${SW}"/>
-      <path d="M-20,-14 C-22,12 -4,24 20,22" stroke="${INK}" stroke-width="15" stroke-linecap="round" fill="none"/>
-      <path d="M-30,30 L30,-30" stroke="#F0443A" stroke-width="9" stroke-linecap="round"/>
-    </g>
     <g class="device">
       <rect x="-58" y="-100" width="116" height="200" rx="20" fill="${INK}"/>
       <rect x="-46" y="-84" width="92" height="168" rx="10" fill="#fff"/>
-      <circle cx="0" cy="-12" r="30" fill="#2FBF62"/>
+      <circle cx="0" cy="-12" r="30" fill="${GREEN}"/>
       <path d="M-14,-12 L-3,0 L16,-24" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
       <rect x="-30" y="34" width="60" height="10" rx="5" fill="#ddd"/>
     </g>`,
   pin: () => `
-    <ellipse class="ring" cx="0" cy="50" rx="40" ry="12" fill="none" stroke="${INK}" stroke-width="6"/>
-    <ellipse class="ring" cx="0" cy="50" rx="40" ry="12" fill="none" stroke="${INK}" stroke-width="6"/>
+    <ellipse class="ring" cx="0" cy="50" rx="40" ry="12" fill="none" stroke="${BLUE}" stroke-width="6"/>
+    <ellipse class="ring" cx="0" cy="50" rx="40" ry="12" fill="none" stroke="${BLUE}" stroke-width="6"/>
     <g class="pinBody">
-      <path d="M0,46 C-10,24 -48,-4 -48,-38 A48,48 0 1 1 48,-38 C48,-4 10,24 0,46 Z" fill="#FF5B3A" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+      <path d="M0,46 C-10,24 -48,-4 -48,-38 A48,48 0 1 1 48,-38 C48,-4 10,24 0,46 Z" fill="${RED}" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
       <circle cx="0" cy="-38" r="16" fill="#fff" stroke="${INK}" stroke-width="7"/>
     </g>`,
   party: () => {
-    const c = ['#FF5B3A', '#2FBF62', '#3E7BFA', '#FFD83D', '#B5545F', '#FF9F1C'];
+    const c = [RED, GREEN, BLUE, YELLOW, '#7B4FD6', SPACE_YELLOW];
     return c.map((col, i) => `<circle class="confetti" r="${i % 2 ? 11 : 14}" fill="${col}" stroke="${INK}" stroke-width="5"/>`).join('');
   },
   laptop: () => `
@@ -198,20 +186,22 @@ const PROPS = {
     <circle cx="-15" cy="-75" r="13" fill="#fff" stroke="${INK}" stroke-width="5"/>`,
 };
 
-// ---------- scene data ----------
+// ---------- scene data: goals, icons and colours as in the app's goal picker ----------
 const CARDS = [
-  { color: '#FFD83D', lines: ['Забронировать', 'столик без звонков'], chars: ['karina'], prop: 'phone' },
-  { color: '#BFE8D2', lines: ['Быстро найти', 'свободный столик', 'рядом'], chars: ['zarina'], prop: 'pin' },
-  { color: '#FFC6A6', lines: ['Найти место', 'для большой компании'], chars: ['bob', 'polo', 'curly'], prop: 'party' },
-  { color: '#D6CCFF', lines: ['Спокойно посидеть', 'и поработать'], chars: ['longhair'], prop: 'laptop' },
+  { icon: 'nocall',  bg: '#FFF1B8', fg: '#B58500', lines: ['Забронировать', 'столик без звонков'], chars: ['karina'], prop: 'phone' },
+  { icon: 'near',    bg: '#E1ECFF', fg: '#2C6CF6', lines: ['Быстро найти', 'свободный столик', 'рядом'], chars: ['zarina'], prop: 'pin' },
+  { icon: 'company', bg: '#E6F7EA', fg: '#1C8C38', lines: ['Найти место', 'для большой компании'], chars: ['bob', 'curly'], prop: 'party' },
+  { icon: 'work',    bg: '#F1E8FF', fg: '#7B4FD6', lines: ['Спокойно посидеть', 'и поработать'], chars: ['longhair'], prop: 'laptop' },
 ];
-const SLOTS = [[290, 560], [790, 560], [290, 1340], [790, 1340]];
+const CS = 0.86;                               // card scale on the 16:9 stage
+const SLOTS = [[286, 600], [735, 600], [1184, 600], [1633, 600]];
+const CENTER = [960, 600];
 const ENTER = [0.05, 0.40, 0.75, 1.10];       // card entrance times
 const SHUFFLE1 = [1.90, 0.30], SHUFFLE2 = [2.20, 0.30], COLLAPSE = [2.50, 0.30];
-const ORDER1 = [1, 3, 0, 2];                  // clockwise: slot i → slot ORDER1[i]
-const ORDER2 = [3, 2, 1, 0];                  // then a diagonal swap
-const GROUP_LAYOUT = { bob: [-130, 0.68], polo: [130, 0.68], curly: [0, 0.72] };
-const FINAL_ROW = ['karina', 'zarina', 'bob', 'curly', 'polo', 'longhair'];
+const ORDER1 = [2, 3, 0, 1];                  // halves leapfrog each other
+const ORDER2 = [1, 0, 3, 2];                  // then neighbours swap
+const GROUP_LAYOUT = { bob: [-100, 0.74], curly: [100, 0.78] };
+const FINAL_ROW = ['karina', 'zarina', 'bob', 'curly', 'longhair'];
 const DURATION = 4.0;
 
 // ---------- build ----------
@@ -223,40 +213,57 @@ const el = (tag, attrs = {}, html = '') => {
   if (html) e.innerHTML = html;
   return e;
 };
+const iconSvg = (name, size, color) =>
+  YS_ICONS.icon(name, size, `x="${-size / 2}" y="${-size / 2}" style="color:${color}"`).replace('stroke-width="1.9"', 'stroke-width="2.6"');
+const appIcon = size => el('image', { href: ICON_SRC, x: -size / 2, y: -size / 2, width: size, height: size });
 
 // soft confetti dots in the background
 (() => {
   const g = $('bgDots');
-  const cols = ['#FFD83D', '#BFE8D2', '#FFC6A6', '#D6CCFF'];
-  for (let i = 0; i < 26; i++) {
-    const x = (i * 397) % 1080, y = 60 + (i * 733) % 1820;
-    g.appendChild(el('circle', { cx: x, cy: y, r: 8 + (i % 4) * 4, fill: cols[i % 4], opacity: .55 }));
+  const cols = CARDS.map(c => c.bg);
+  for (let i = 0; i < 30; i++) {
+    const x = 30 + (i * 397) % 1860, y = 30 + (i * 233) % 1020;
+    g.appendChild(el('circle', { cx: x, cy: y, r: 9 + (i % 4) * 5, fill: cols[i % 4] }));
   }
 })();
 
+// header: app icon + wordmark, as in the goal picker
+const header = $('header');
+const headerInner = el('g');
+header.appendChild(headerInner);
+headerInner.appendChild(appIcon(78));
+const hw = el('text', { x: 56, y: 15, 'font-size': 44, 'font-weight': 700, fill: INK, 'letter-spacing': -0.7 });
+hw.innerHTML = `Яндекс <tspan fill="${SPACE_YELLOW}">Спейс</tspan>`;
+headerInner.appendChild(hw);
+
 const cardEls = CARDS.map((c, i) => {
   const g = el('g');
-  g.appendChild(el('rect', { x: -240, y: -370, width: 480, height: 740, rx: 44, fill: c.color, stroke: INK, 'stroke-width': SW }));
+  g.appendChild(el('rect', { x: -240, y: -370, width: 480, height: 740, rx: 44, fill: c.bg, stroke: INK, 'stroke-width': SW }));
   const clip = el('g', { 'clip-path': 'url(#cardClip)' });
   const charEls = c.chars.map(name => {
     const cg = el('g', {}, CHAR[name]());
     clip.appendChild(cg);
     return { name, g: cg };
   });
-  // draw the centre kid of the group last so they overlap the friends
   g.appendChild(clip);
   const table = el('rect', { x: -220, y: 100, width: 440, height: 36, rx: 14, fill: '#fff', stroke: INK, 'stroke-width': SW });
   const propG = el('g', {}, PROPS[c.prop]());
   if (c.prop === 'laptop') { g.appendChild(propG); g.appendChild(table); }
   else { g.appendChild(table); g.appendChild(propG); }
-  const lineEls = c.lines.map((txt, k) => {
-    const t = el('text', { 'text-anchor': 'middle', 'font-weight': 800, 'font-size': 40, fill: INK });
+  // goal badge (same icon as the app tile) + tile number
+  const badge = el('g', {}, `<circle r="44" fill="#fff" stroke="${INK}" stroke-width="${SW}"/>${iconSvg(c.icon, 52, c.fg)}`);
+  g.appendChild(badge);
+  const num = el('text', { x: 196, y: -306, 'text-anchor': 'middle', 'font-size': 36, 'font-weight': 700, fill: c.fg });
+  num.textContent = i + 1;
+  g.appendChild(num);
+  const lineEls = c.lines.map(txt => {
+    const t = el('text', { 'text-anchor': 'middle', 'font-weight': 700, 'font-size': 40, fill: INK });
     t.textContent = txt;
     g.appendChild(t);
     return t;
   });
   $('cards').appendChild(g);
-  return { g, charEls, propG, lineEls, table };
+  return { g, charEls, propG, lineEls, badge, num };
 });
 
 // shrink captions that would overflow the card
@@ -275,38 +282,44 @@ function fitCaptions() {
 
 // burst particles
 const burstEls = [];
-for (let i = 0; i < 14; i++) {
-  const col = CARDS[i % 4].color;
-  const b = el('circle', { r: 0, fill: col, stroke: INK, 'stroke-width': 6 });
+const burstCols = [YELLOW, RED, GREEN, BLUE, '#7B4FD6', SPACE_YELLOW, '#fff'];
+for (let i = 0; i < 16; i++) {
+  const b = el('circle', { r: 0, fill: burstCols[i % burstCols.length], stroke: INK, 'stroke-width': 6 });
   $('burst').appendChild(b);
   burstEls.push(b);
 }
 
-// finale: logo + everyone behind one long table
+// finale: app icon + wordmark, then everyone behind one long table
 const finale = $('finale');
-const logo = el('g');
-finale.appendChild(logo);
-const logoBlob = el('path', { d: 'M-440,20 C-450,-150 -200,-230 20,-225 C260,-220 450,-150 445,20 C440,190 230,250 0,245 C-230,240 -430,180 -440,20 Z', fill: '#fff', stroke: INK, 'stroke-width': SW });
-logo.appendChild(logoBlob);
-const WORDS = [{ text: 'Яндекс', size: 110, y: -40 }, { text: 'Спейс', size: 175, y: 140 }];
+const LOGO_ICON = 230, LOGO_GAP = 50, LOGO_SIZE = 150, LOGO_Y = 360;
+const logoIcon = el('g');
+logoIcon.appendChild(appIcon(LOGO_ICON));
+finale.appendChild(logoIcon);
 const letterEls = [];
-WORDS.forEach((w, wi) => {
-  const probe = el('text', { 'font-size': w.size, 'font-weight': 900 });
-  probe.textContent = w.text;
-  logo.appendChild(probe);
+let logoIconX = 0;
+function buildWordmark() {
+  const full = 'Яндекс Спейс';
+  const probe = el('text', { 'font-size': LOGO_SIZE, 'font-weight': 700 });
+  probe.textContent = full;
+  finale.appendChild(probe);
   const total = probe.getComputedTextLength();
-  const xs = [...w.text].map((_, k) => probe.getSubStringLength(0, k));
-  const ws = [...w.text].map((_, k) => probe.getSubStringLength(k, 1));
+  const chars = [...full];
+  const xs = chars.map((_, k) => probe.getSubStringLength(0, k));
+  const ws = chars.map((_, k) => probe.getSubStringLength(k, 1));
   probe.remove();
-  [...w.text].forEach((ch, k) => {
+  const left = 960 - (LOGO_ICON + LOGO_GAP + total) / 2;
+  logoIconX = left + LOGO_ICON / 2;
+  const textLeft = left + LOGO_ICON + LOGO_GAP;
+  chars.forEach((ch, k) => {
+    if (ch === ' ') return;
     const lg = el('g');
-    const t = el('text', { 'font-size': w.size, 'font-weight': 900, fill: INK, 'text-anchor': 'middle', 'letter-spacing': 0 });
+    const t = el('text', { 'font-size': LOGO_SIZE, 'font-weight': 700, fill: k > 6 ? SPACE_YELLOW : INK, 'text-anchor': 'middle', y: LOGO_SIZE * 0.36 });
     t.textContent = ch;
     lg.appendChild(t);
-    logo.appendChild(lg);
-    letterEls.push({ g: lg, x: -total / 2 + xs[k] + ws[k] / 2, y: w.y, word: wi, k });
+    finale.appendChild(lg);
+    letterEls.push({ g: lg, x: textLeft + xs[k] + ws[k] / 2, k });
   });
-});
+}
 const row = el('g', { 'clip-path': 'url(#rowClip)' });
 finale.appendChild(row);
 const rowChars = FINAL_ROW.map(name => {
@@ -314,11 +327,16 @@ const rowChars = FINAL_ROW.map(name => {
   row.appendChild(g);
   return g;
 });
-const longTable = el('rect', { x: 70, y: 1398, width: 940, height: 44, rx: 18, fill: '#fff', stroke: INK, 'stroke-width': SW });
+const longTable = el('rect', { x: 500, y: 928, width: 920, height: 40, rx: 16, fill: '#fff', stroke: INK, 'stroke-width': SW });
 finale.appendChild(longTable);
 
 // ---------- render one frame at time t (seconds) ----------
 function render(t) {
+  // --- header ---
+  const hIn = easeOutBack(prog(t, 0.0, 0.4), 2.4);
+  const hOut = easeInBack(prog(t, COLLAPSE[0], 0.25));
+  headerInner.setAttribute('transform', `translate(${lerp(-260, 110, hIn) - hOut * 400},110) rotate(${(1 - hIn) * -30})`);
+
   // --- cards ---
   cardEls.forEach((c, i) => {
     const t0 = ENTER[i];
@@ -327,33 +345,28 @@ function render(t) {
     let s = easeOutBack(pIn, 2.6);
     let rot = (1 - easeOutBack(pIn)) * (i % 2 ? 14 : -14);
 
-    // shuffle 1 & 2: cards hop to another slot along an arc
-    const shuffle = (from, order, [st, du]) => {
+    // shuffle 1 & 2: cards leap to another slot along an arc
+    const shuffle = (from, order, [st, du], up) => {
       const p = easeInOutCubic(prog(t, st, du));
       const [tx, ty] = SLOTS[order[from]];
       const [fx, fy] = SLOTS[from];
       const arc = Math.sin(Math.PI * p);
-      return { x: lerp(fx, tx, p), y: lerp(fy, ty, p) - arc * 90, s: 1 - arc * 0.16, rot: arc * (i % 2 ? 10 : -10), slot: p >= 1 ? order[from] : from };
+      return { x: lerp(fx, tx, p), y: lerp(fy, ty, p) + (up ? -1 : 1) * arc * 110, s: 1 - arc * 0.2, rot: arc * (up ? -12 : 12) };
     };
     if (t >= SHUFFLE1[0]) {
-      const r = shuffle(i, ORDER1, SHUFFLE1);
-      ({ x, y } = r); s = r.s; rot = r.rot;
-      if (t >= SHUFFLE2[0]) {
-        const r2 = shuffle(ORDER1[i], ORDER2, SHUFFLE2);
-        ({ x, y } = r2); s = r2.s; rot = r2.rot;
-      }
+      ({ x, y, s, rot } = shuffle(i, ORDER1, SHUFFLE1, i < 2));
+      if (t >= SHUFFLE2[0]) ({ x, y, s, rot } = shuffle(ORDER1[i], ORDER2, SHUFFLE2, ORDER1[i] % 2 === 0));
     }
     // collapse into the centre with a spin
     if (t >= COLLAPSE[0]) {
       const slot = ORDER2[ORDER1[i]];
-      const p = prog(t, COLLAPSE[0], COLLAPSE[1]);
-      const e = easeInBack(p);
-      x = lerp(SLOTS[slot][0], 540, e);
-      y = lerp(SLOTS[slot][1], 950, e);
+      const e = easeInBack(prog(t, COLLAPSE[0], COLLAPSE[1]));
+      x = lerp(SLOTS[slot][0], CENTER[0], e);
+      y = lerp(SLOTS[slot][1], CENTER[1], e);
       s = Math.max(0, 1 - e);
       rot = e * (i % 2 ? 220 : -220);
     }
-    c.g.setAttribute('transform', `translate(${x},${y}) rotate(${rot}) scale(${Math.max(0, s)})`);
+    c.g.setAttribute('transform', `translate(${x},${y}) rotate(${rot}) scale(${Math.max(0, s) * CS})`);
     c.g.style.display = s <= 0.001 ? 'none' : '';
 
     // characters pop up from behind the table, then keep bouncing
@@ -366,6 +379,11 @@ function render(t) {
       ch.g.setAttribute('transform', `translate(${gx},${100 + (1 - p) * 420 + bounce}) scale(${gs * (2 - squash)},${gs * squash})`);
     });
 
+    // badge + number spring in
+    const be = easeOutElastic(prog(t, t0 + 0.16, 0.5));
+    c.badge.setAttribute('transform', `translate(-176,-306) rotate(${(1 - be) * -90}) scale(${be})`);
+    c.num.setAttribute('opacity', prog(t, t0 + 0.2, 0.15));
+
     // caption lines spring up one after another
     const fs = c.fontSize;
     c.lineEls.forEach((ln, k) => {
@@ -377,33 +395,28 @@ function render(t) {
     });
 
     // props
-    const pp = prog(t, t0 + 0.2, 0.45);
-    const pe = easeOutElastic(pp);
+    const pe = easeOutElastic(prog(t, t0 + 0.2, 0.45));
     const name = CARDS[i].prop;
     if (name === 'phone') {
-      const dev = c.propG.querySelector('.device'), bub = c.propG.querySelector('.bubble');
+      const dev = c.propG.querySelector('.device');
       dev.setAttribute('transform', `translate(150,${-200 + hop(t, t0 + 0.5, 0.42, 14)}) rotate(${12 - 8 * pe}) scale(${pe})`);
-      const be = easeOutElastic(prog(t, t0 + 0.3, 0.45));
-      bub.setAttribute('transform', `translate(-150,-270) rotate(${-10 * Math.sin(t * 9)}) scale(${be})`);
     } else if (name === 'pin') {
       const body = c.propG.querySelector('.pinBody');
       body.setAttribute('transform', `translate(0,${hop(t, t0 + 0.55, 0.42, 30)}) scale(${pe})`);
       c.propG.querySelectorAll('.ring').forEach((r, k) => {
         const ph = ((t - t0 - 0.4 - k * 0.3) % 0.6 + 0.6) % 0.6 / 0.6;
-        const on = t > t0 + 0.4;
         r.setAttribute('rx', 30 + ph * 60); r.setAttribute('ry', 9 + ph * 18);
-        r.setAttribute('opacity', on ? (1 - ph) : 0);
+        r.setAttribute('opacity', t > t0 + 0.4 ? (1 - ph) : 0);
       });
-      c.propG.setAttribute('transform', 'translate(150,-230)');
+      c.propG.setAttribute('transform', 'translate(155,-215)');
     } else if (name === 'party') {
       c.propG.querySelectorAll('.confetti').forEach((cf, k) => {
         const st = t0 + 0.25 + k * 0.05;
         const p = clamp((t - st) / 0.9);
         const ang = -Math.PI / 2 + (k - 2.5) * 0.45;
         const dist = 150 * easeOutBack(clamp(p * 1.6), 1.2);
-        const cx = Math.cos(ang) * dist, cy = -210 + Math.sin(ang) * dist + 120 * p * p;
-        cf.setAttribute('cx', cx); cf.setAttribute('cy', cy);
-        cf.setAttribute('transform', `scale(1)`);
+        cf.setAttribute('cx', Math.cos(ang) * dist);
+        cf.setAttribute('cy', -210 + Math.sin(ang) * dist + 120 * p * p);
         cf.setAttribute('opacity', t < st ? 0 : 1);
       });
     } else if (name === 'laptop') {
@@ -414,49 +427,52 @@ function render(t) {
     }
   });
 
-  // --- yellow wipe + burst ---
-  const wipeP = easeInOutCubic(prog(t, 2.68, 0.35));
-  $('wipe').setAttribute('r', wipeP * 1300);
+  // --- yellow wipe, then white (the app's splash background) + burst ---
+  $('wipe').setAttribute('r', easeInOutCubic(prog(t, 2.62, 0.32)) * 1150);
+  $('wipe2').setAttribute('r', easeInOutCubic(prog(t, 2.80, 0.32)) * 1150);
   burstEls.forEach((b, k) => {
     const p = prog(t, 2.74, 0.5);
     const ang = k / burstEls.length * Math.PI * 2;
-    const d = 80 + 520 * (1 - Math.pow(1 - p, 3));
-    b.setAttribute('cx', 540 + Math.cos(ang) * d);
-    b.setAttribute('cy', 950 + Math.sin(ang) * d);
-    b.setAttribute('r', p > 0 && p < 1 ? (k % 2 ? 22 : 30) * (1 - p) : 0);
+    const d = 80 + 640 * (1 - Math.pow(1 - p, 3));
+    b.setAttribute('cx', CENTER[0] + Math.cos(ang) * d * 1.3);
+    b.setAttribute('cy', CENTER[1] - 120 + Math.sin(ang) * d * 0.75);
+    const r = p > 0 && p < 1 ? (k % 2 ? 22 : 30) * (1 - p) : 0;
+    b.setAttribute('r', r);
+    b.setAttribute('stroke-width', Math.min(6, r / 3));
   });
 
-  // --- logo ---
-  const lp = prog(t, 2.78, 0.6);
-  const ls = easeOutElastic(lp);
-  logo.setAttribute('transform', `translate(540,${700 + hop(t, 3.5, 0.5, 8)}) rotate(${(1 - ls) * -12}) scale(${ls})`);
-  logo.style.display = lp <= 0 ? 'none' : '';
+  // --- logo: icon spins in like the app splash, letters hop in one by one ---
+  const ip = prog(t, 2.86, 0.55);
+  const ie = easeOutElastic(ip);
+  logoIcon.setAttribute('transform', `translate(${logoIconX},${LOGO_Y + hop(t, 3.55, 0.4, 10)}) rotate(${(1 - ie) * -200}) scale(${ie})`);
+  logoIcon.style.display = ip <= 0 ? 'none' : '';
   letterEls.forEach((L, idx) => {
-    const st = 2.86 + idx * 0.035;
-    const p = prog(t, st, 0.32);
+    const p = prog(t, 2.96 + idx * 0.03, 0.32);
     const e = easeOutBack(p, 3);
-    const j = hop(t, 3.55 + L.k * 0.04, 0.3, L.word ? 14 : 8) * (t < 3.85 + L.k * 0.04 ? 1 : 0);
-    L.g.setAttribute('transform', `translate(${L.x},${L.y + (1 - e) * -120 + j}) scale(${e})`);
+    const j = t < 3.9 ? hop(t, 3.55 + idx * 0.03, 0.3, 14) : 0;
+    L.g.setAttribute('transform', `translate(${L.x},${LOGO_Y + (1 - e) * -140 + j}) scale(${e})`);
     L.g.setAttribute('opacity', p > 0 ? 1 : 0);
   });
 
   // --- everyone together behind the long table ---
   rowChars.forEach((g, k) => {
-    const st = 3.0 + k * 0.06;
+    const st = 3.08 + k * 0.06;
     const p = easeOutBack(prog(t, st, 0.34), 2.4);
     const bounce = hop(t, st + 0.34, 0.36, 12);
-    const x = 540 + (k - 2.5) * 156;
-    g.setAttribute('transform', `translate(${x},${1400 + (1 - p) * 320 + bounce}) scale(.54)`);
+    const x = 960 + (k - 2) * 180;
+    g.setAttribute('transform', `translate(${x},${930 + (1 - p) * 300 + bounce}) scale(.6)`);
   });
-  const tp = easeOutBack(prog(t, 2.92, 0.3), 2);
-  longTable.setAttribute('transform', `translate(540,1420) scale(${tp}) translate(-540,-1420)`);
+  const tp = easeOutBack(prog(t, 3.0, 0.3), 2);
+  longTable.setAttribute('transform', `translate(960,948) scale(${tp}) translate(-960,-948)`);
 }
 
 // ---------- boot ----------
 const params = new URLSearchParams(location.search);
 window.render = render;
-document.fonts.ready.then(() => {
+const imgReady = new Promise(r => { const im = new Image(); im.onload = im.onerror = r; im.src = ICON_SRC; });
+Promise.all([document.fonts.load('700 40px Inter', 'Яндекс Спейс'), imgReady]).then(() => document.fonts.ready).then(() => {
   fitCaptions();
+  buildWordmark();
   if (params.has('capture')) {
     document.body.classList.add('capture');
     render(0);

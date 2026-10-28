@@ -10,7 +10,7 @@ const DURATION = 4.0;
 
 (async () => {
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 1080, height: 1920 } });
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   await page.goto('file://' + path.join(__dirname, 'index.html') + '?capture');
   await page.waitForFunction(() => window.ready === true);
 
