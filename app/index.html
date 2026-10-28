@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'">
+  <title>Яндекс Спейс</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app" class="booting">
+    <!-- Слой 0: карта -->
+    <div id="viewport">
+      <div id="stage"><svg id="map" xmlns="http://www.w3.org/2000/svg"></svg></div>
+      <div id="markers"></div>
+    </div>
+
+    <!-- Слой 1: левая колонка (поиск + панель результатов / карточка) -->
+    <aside id="column">
+      <div class="searchbar" id="searchbar" role="button" tabindex="0">
+        <span class="brand-dot" aria-hidden="true"></span>
+        <span class="search-ic"></span>
+        <span class="search-text" id="searchText">Что хотите сделать?</span>
+        <span class="search-mic"></span>
+      </div>
+      <div class="chips" id="chips"></div>
+      <section id="panel" class="hidden">
+        <div id="results" class="layer"></div>
+        <div id="card" class="layer"></div>
+      </section>
+    </aside>
+
+    <!-- Слой 1: элементы управления картой -->
+    <div class="topright">
+      <button class="pill" id="myBookings" hidden></button>
+      <div class="live-chip"><span class="live-dot"></span><span id="clock">Сейчас</span></div>
+    </div>
+    <div class="map-controls">
+      <button class="ctl" id="zoomIn" title="Приблизить"></button>
+      <button class="ctl" id="zoomOut" title="Отдалить"></button>
+      <button class="ctl round" id="locate" title="Где я"></button>
+    </div>
+    <div class="attribution">Яндекс Спейс · учебный прототип · данные демонстрационные</div>
+
+    <!-- Слой 2: выбор цели -->
+    <div id="picker" class="overlay">
+      <div class="picker-card">
+        <button class="icon-btn picker-close" id="pickerClose" title="Закрыть" hidden></button>
+        <div class="picker-head">
+          <div class="app-icon" aria-hidden="true"></div>
+          <div>
+            <div class="wordmark">Яндекс <b>Спейс</b></div>
+            <div class="tagline">Свободные столики в кафе — в реальном времени</div>
+          </div>
+        </div>
+        <h1>Что хотите сделать?</h1>
+        <div class="tiles" id="tiles"></div>
+        <div class="picker-foot"><span class="live-dot"></span>Казань, центр ·&nbsp;<span id="pickerCount"></span>&nbsp;заведений передают статус мест прямо сейчас</div>
+      </div>
+    </div>
+
+    <!-- Слой 3: модальные окна и уведомления -->
+    <div id="modal" class="overlay"></div>
+    <div id="push"></div>
+    <div id="toast"></div>
+  </div>
+
+  <script src="icons.js"></script>
+  <script src="data.js"></script>
+  <script src="map.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+{
+  "name": "yandex-space",
+  "productName": "Яндекс Спейс",
+  "version": "0.1.0",
+  "description": "Прототип сервиса «Яндекс Спейс» — свободные столики в кафе в реальном времени",
+  "main": "main.js",
+  "author": "Команда проекта «Яндекс Спейс»",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable --x64"
+  },
+  "build": {
+    "appId": "ru.student.yandexspace",
+    "productName": "Яндекс Спейс",
+    "artifactName": "YandexSpace-${version}-portable.exe",
+    "files": [
+      "main.js",
+      "app/**/*"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "compression": "maximum",
+    "win": {
+      "target": "portable",
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "unpackDirName": "YandexSpace"
+    }
+  },
+  "devDependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "electron": "^33.4.11",
+    "electron-builder": "^26.18.0"
+  }
+}
