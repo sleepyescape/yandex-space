@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Яндекс Спейс — заставка</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; background: #1d1d1d; }
+  body { display: flex; align-items: center; justify-content: center; }
+  svg { height: 100vh; width: auto; max-width: 100vw; display: block; }
+  body.capture { background: #FFF6E3; }
+  body.capture svg { width: 1080px; height: 1920px; max-width: none; }
+  text { font-family: Inter, "Inter Display", system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<svg id="stage" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="cardClip"><rect x="-240" y="-370" width="480" height="480" rx="44"/></clipPath>
+    <clipPath id="rowClip"><rect x="0" y="0" width="1080" height="1408"/></clipPath>
+  </defs>
+  <rect width="1080" height="1920" fill="#FFF6E3"/>
+  <g id="bgDots"></g>
+  <circle id="wipe" cx="540" cy="900" r="0" fill="#FFD83D"/>
+  <g id="cards"></g>
+  <g id="burst"></g>
+  <g id="finale"></g>
+</svg>
+
+<script>
+// ---------- palette ----------
+const INK = '#141414';
+const SW = 9; // stroke width, as in the reference doodle
+
+// ---------- easing ----------
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, start, dur) => clamp((t - start) / dur);
+const lerp = (a, b, x) => a + (b - a) * x;
+const easeOutBack = (x, s = 2.2) => 1 + (s + 1) * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2);
+const easeInBack = (x, s = 1.8) => (s + 1) * x * x * x - s * x * x;
+const easeInOutCubic = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const easeOutElastic = x => x === 0 ? 0 : x === 1 ? 1 :
+  Math.pow(2, -10 * x) * Math.sin((x * 10 - 0.75) * (2 * Math.PI) / 3) + 1;
+// small repeating hop: 0 → -h → 0 every `period` seconds
+const hop = (t, start, period, h) => t < start ? 0 : -h * Math.abs(Math.sin(Math.PI * (t - start) / period));
+
+// ---------- character parts ----------
+const head = (rx = 88, ry = 100) => `
+  <rect x="-28" y="-215" width="56" height="70" fill="#fff" stroke="${INK}" stroke-width="${SW}"/>
+  <ellipse cx="0" cy="-292" rx="${rx}" ry="${ry}" fill="#fff" stroke="${INK}" stroke-width="${SW}"/>`;
+const eyes = (dx = 0, y = -282) => `
+  <ellipse cx="${-30 + dx}" cy="${y}" rx="8" ry="11" fill="${INK}"/>
+  <ellipse cx="${30 + dx}" cy="${y}" rx="8" ry="11" fill="${INK}"/>`;
+const torso = fill => `
+  <path d="M-172,60 C-170,-60 -140,-135 -50,-165 L50,-165 C140,-135 170,-60 172,60 Z"
+        fill="${fill}" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>`;
+const sleeveLines = `
+  <path d="M-118,-40 L-112,60 M118,-40 L112,60" stroke="${INK}" stroke-width="${SW}" stroke-linecap="round" fill="none"/>`;
+
+// scalloped "curly" hair cap generated around the top of the head
+function curlyHair(color, { cx = 0, cy = -300, rx = 112, ry = 118, from = 195, to = 345, n = 9, fringeY = -318, fringeN = 4 } = {}) {
+  const P = a => [cx + rx * Math.cos(a * Math.PI / 180), cy + ry * Math.sin(a * Math.PI / 180)];
+  const pts = [];
+  for (let i = 0; i <= n; i++) pts.push(P(from + (to - from) * i / n));
+  let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for (let i = 1; i < pts.length; i++) {
+    const r = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]) * 0.62;
+    d += ` A${r.toFixed(1)},${r.toFixed(1)} 0 0 1 ${pts[i][0].toFixed(1)},${pts[i][1].toFixed(1)}`;
+  }
+  // fringe back across the forehead, smaller curls
+  const end = pts[pts.length - 1], start = pts[0];
+  const f = [];
+  for (let i = 0; i <= fringeN; i++) {
+    const x = lerp(end[0] - 6, start[0] + 6, i / fringeN);
+    const y = fringeY + (i % 2 ? 14 : 0) + Math.abs(i - fringeN / 2) * -4;
+    f.push([x, y]);
+  }
+  for (const [x, y] of f) {
+    d += ` A26,26 0 0 1 ${x.toFixed(1)},${y.toFixed(1)}`;
+  }
+  d += ` A40,40 0 0 1 ${start[0].toFixed(1)},${start[1].toFixed(1)} Z`;
+  return `<path d="${d}" fill="${color}" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>`;
+}
+
+// ---------- characters (origin = table top, centre) ----------
+const CHAR = {
+  // long wavy dark hair, beige blazer over a white top, gold pendant
+  karina: () => `
+    <path d="M-104,-300 C-120,-420 120,-420 104,-300 C150,-210 118,-130 165,-30 L-165,-30 C-118,-130 -150,-210 -104,-300 Z" fill="#2E1D14" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+    ${torso('#DCD3C2')}
+    <path d="M-50,-165 L0,-40 L50,-165 Z" fill="#fff" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+    <path d="M-50,-165 L-78,-60 L-20,-80 M50,-165 L78,-60 L20,-80" stroke="${INK}" stroke-width="${SW}" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+    ${head()}
+    <circle cx="0" cy="-118" r="9" fill="#E9B949" stroke="${INK}" stroke-width="5"/>
+    <path d="M-92,-262 C-110,-392 -10,-418 50,-398 C112,-378 118,-310 94,-262 C70,-330 20,-352 -6,-334 C-40,-318 -66,-292 -92,-262 Z" fill="#2E1D14" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+    <path d="M-88,-250 C-128,-200 -96,-150 -136,-90 C-150,-60 -128,-20 -110,-8 C-100,-60 -70,-90 -76,-150 C-80,-190 -72,-220 -88,-250 Z" fill="#2E1D14" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+    <path d="M88,-250 C128,-200 96,-150 136,-90 C150,-60 128,-20 110,-8 C100,-60 70,-90 76,-150 C80,-190 72,-220 88,-250 Z" fill="#2E1D14" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+    ${eyes(-4, -276)}`,
+
+  // patterned dusty-rose headscarf, round glasses
+  zarina: () => {
+    let dots = '';
+    const spots = [[-120,-330],[-140,-230],[-150,-120],[-120,-40],[-70,-60],[110,-340],[140,-240],[150,-130],[118,-40],[70,-70],[0,-410],[-60,-395],[60,-395],[-30,-100],[35,-110]];
+    for (const [x, y] of spots) dots += `<circle cx="${x}" cy="${y}" r="7" fill="#F2C27A" opacity=".9"/>`;
+    return `
+    ${torso('#2A2326')}
+    <rect x="-28" y="-215" width="56" height="70" fill="#fff" stroke="${INK}" stroke-width="${SW}"/>
+    <path d="M-118,-300 C-128,-440 128,-440 118,-300 C128,-220 160,-140 176,60 L-176,60 C-160,-140 -128,-220 -118,-300 Z" fill="#B5545F" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+    <ellipse cx="0" cy="-286" rx="70" ry="86" fill="#fff" stroke="${INK}" stroke-width="${SW}"/>
+    <path d="M-74,-226 C-50,-176 50,-176 74,-226 C92,-170 60,-136 0,-132 C-60,-136 -92,-170 -74,-226 Z" fill="#B5545F" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+    <path d="M-150,-60 C-80,-100 40,-90 150,-20" stroke="${INK}" stroke-width="7" fill="none" stroke-linecap="round" opacity=".55"/>
+    ${dots}
+    ${eyes(0, -280)}
+    <circle cx="-31" cy="-280" r="27" fill="none" stroke="${INK}" stroke-width="6"/>
+    <circle cx="31" cy="-280" r="27" fill="none" stroke="${INK}" stroke-width="6"/>
+    <path d="M-5,-284 Q0,-290 5,-284" stroke="${INK}" stroke-width="6" fill="none"/>`;
+  },
+
+  // brown bob, black leather jacket, burgundy zip top
+  bob: () => `
+    <path d="M-112,-196 C-140,-430 140,-430 112,-196 C80,-188 60,-200 60,-230 L-60,-230 C-60,-200 -80,-188 -112,-196 Z" fill="#6E4A33" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+    ${torso('#262626')}
+    <path d="M-46,-165 L-30,-60 L30,-60 L46,-165 Z" fill="#7C2333" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+    <path d="M0,-150 L0,-60" stroke="#C9C9C9" stroke-width="5"/>
+    <path d="M-50,-165 L-92,-60 M50,-165 L92,-60" stroke="#6b6b6b" stroke-width="7" stroke-linecap="round"/>
+    ${head(86, 98)}
+    <path d="M-92,-286 C-106,-424 98,-438 98,-292 C60,-330 0,-352 -40,-330 C-60,-318 -80,-300 -92,-286 Z" fill="#6E4A33" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+    ${eyes(4, -270)}`,
+
+  // light-brown curls, white hoodie
+  curly: () => `
+    <ellipse cx="0" cy="-160" rx="96" ry="40" fill="#F4F2EC" stroke="${INK}" stroke-width="${SW}"/>
+    ${torso('#F4F2EC')}
+    ${head()}
+    <path d="M-40,-150 L-46,-60 M40,-150 L46,-60" stroke="${INK}" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="-46" cy="-56" r="7" fill="${INK}"/><circle cx="46" cy="-56" r="7" fill="${INK}"/>
+    ${sleeveLines}
+    ${curlyHair('#A8794C', { rx: 120, ry: 124, n: 10, fringeY: -326 })}
+    ${eyes(0, -270)}`,
+
+  // black curly hair, green polo — the reference doodle
+  polo: () => `
+    ${torso('#3D5A20')}
+    ${head()}
+    <path d="M-30,-160 L-70,-150 L-48,-96 L-6,-140 Z M30,-160 L70,-150 L48,-96 L6,-140 Z" fill="#3D5A20" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+    <circle cx="0" cy="-104" r="7" fill="${INK}"/><circle cx="0" cy="-64" r="7" fill="${INK}"/>
+    ${sleeveLines}
+    ${curlyHair(INK, { rx: 116, ry: 120, n: 8, fringeY: -322, fringeN: 3 })}
+    ${eyes(-14, -272)}`,
+
+  // long straight hair with a centre part, oversized beige shirt
+  longhair: () => `
+    <path d="M-110,-300 C-120,-420 120,-420 110,-300 L124,-30 L-124,-30 Z" fill="#5C3824" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+    ${torso('#E5CE9E')}
+    <path d="M-40,-165 L0,-70 L40,-165 Z" fill="#D9BE8A" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+    <path d="M-44,-168 L-86,-150 L-56,-92 L-6,-128 M44,-168 L86,-150 L56,-92 L6,-128" fill="#E5CE9E" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+    ${head(86, 100)}
+    <path d="M0,-394 C-70,-394 -102,-340 -100,-268 L-118,-20 L-84,-24 L-74,-250 C-70,-320 -40,-360 0,-370 C40,-360 70,-320 74,-250 L84,-24 L118,-20 L100,-268 C102,-340 70,-394 0,-394 Z" fill="#5C3824" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+    ${eyes(0, -272)}`,
+};
+
+// ---------- props ----------
+const PROPS = {
+  phone: () => `
+    <g class="bubble">
+      <circle r="50" fill="#fff" stroke="${INK}" stroke-width="${SW}"/>
+      <path d="M-20,-14 C-22,12 -4,24 20,22" stroke="${INK}" stroke-width="15" stroke-linecap="round" fill="none"/>
+      <path d="M-30,30 L30,-30" stroke="#F0443A" stroke-width="9" stroke-linecap="round"/>
+    </g>
+    <g class="device">
+      <rect x="-58" y="-100" width="116" height="200" rx="20" fill="${INK}"/>
+      <rect x="-46" y="-84" width="92" height="168" rx="10" fill="#fff"/>
+      <circle cx="0" cy="-12" r="30" fill="#2FBF62"/>
+      <path d="M-14,-12 L-3,0 L16,-24" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <rect x="-30" y="34" width="60" height="10" rx="5" fill="#ddd"/>
+    </g>`,
+  pin: () => `
+    <ellipse class="ring" cx="0" cy="50" rx="40" ry="12" fill="none" stroke="${INK}" stroke-width="6"/>
+    <ellipse class="ring" cx="0" cy="50" rx="40" ry="12" fill="none" stroke="${INK}" stroke-width="6"/>
+    <g class="pinBody">
+      <path d="M0,46 C-10,24 -48,-4 -48,-38 A48,48 0 1 1 48,-38 C48,-4 10,24 0,46 Z" fill="#FF5B3A" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+      <circle cx="0" cy="-38" r="16" fill="#fff" stroke="${INK}" stroke-width="7"/>
+    </g>`,
+  party: () => {
+    const c = ['#FF5B3A', '#2FBF62', '#3E7BFA', '#FFD83D', '#B5545F', '#FF9F1C'];
+    return c.map((col, i) => `<circle class="confetti" r="${i % 2 ? 11 : 14}" fill="${col}" stroke="${INK}" stroke-width="5"/>`).join('');
+  },
+  laptop: () => `
+    <g class="steam">
+      <path d="M135,-110 C120,-130 150,-145 135,-165" stroke="${INK}" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <path d="M163,-110 C148,-130 178,-145 163,-165" stroke="${INK}" stroke-width="6" fill="none" stroke-linecap="round"/>
+    </g>
+    <path d="M178,-62 C210,-62 210,-20 178,-20" stroke="${INK}" stroke-width="${SW}" fill="none"/>
+    <path d="M118,-82 L182,-82 L176,0 L124,0 Z" fill="#fff" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+    <rect x="-130" y="-150" width="230" height="150" rx="14" fill="#C9CBD3" stroke="${INK}" stroke-width="${SW}"/>
+    <circle cx="-15" cy="-75" r="13" fill="#fff" stroke="${INK}" stroke-width="5"/>`,
+};
+
+// ---------- scene data ----------
+const CARDS = [
+  { color: '#FFD83D', lines: ['Забронировать', 'столик без звонков'], chars: ['karina'], prop: 'phone' },
+  { color: '#BFE8D2', lines: ['Быстро найти', 'свободный столик', 'рядом'], chars: ['zarina'], prop: 'pin' },
+  { color: '#FFC6A6', lines: ['Найти место', 'для большой компании'], chars: ['bob', 'polo', 'curly'], prop: 'party' },
+  { color: '#D6CCFF', lines: ['Спокойно посидеть', 'и поработать'], chars: ['longhair'], prop: 'laptop' },
+];
+const SLOTS = [[290, 560], [790, 560], [290, 1340], [790, 1340]];
+const ENTER = [0.05, 0.40, 0.75, 1.10];       // card entrance times
+const SHUFFLE1 = [1.90, 0.30], SHUFFLE2 = [2.20, 0.30], COLLAPSE = [2.50, 0.30];
+const ORDER1 = [1, 3, 0, 2];                  // clockwise: slot i → slot ORDER1[i]
+const ORDER2 = [3, 2, 1, 0];                  // then a diagonal swap
+const GROUP_LAYOUT = { bob: [-130, 0.68], polo: [130, 0.68], curly: [0, 0.72] };
+const FINAL_ROW = ['karina', 'zarina', 'bob', 'curly', 'polo', 'longhair'];
+const DURATION = 4.0;
+
+// ---------- build ----------
+const NS = 'http://www.w3.org/2000/svg';
+const $ = id => document.getElementById(id);
+const el = (tag, attrs = {}, html = '') => {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (html) e.innerHTML = html;
+  return e;
+};
+
+// soft confetti dots in the background
+(() => {
+  const g = $('bgDots');
+  const cols = ['#FFD83D', '#BFE8D2', '#FFC6A6', '#D6CCFF'];
+  for (let i = 0; i < 26; i++) {
+    const x = (i * 397) % 1080, y = 60 + (i * 733) % 1820;
+    g.appendChild(el('circle', { cx: x, cy: y, r: 8 + (i % 4) * 4, fill: cols[i % 4], opacity: .55 }));
+  }
+})();
+
+const cardEls = CARDS.map((c, i) => {
+  const g = el('g');
+  g.appendChild(el('rect', { x: -240, y: -370, width: 480, height: 740, rx: 44, fill: c.color, stroke: INK, 'stroke-width': SW }));
+  const clip = el('g', { 'clip-path': 'url(#cardClip)' });
+  const charEls = c.chars.map(name => {
+    const cg = el('g', {}, CHAR[name]());
+    clip.appendChild(cg);
+    return { name, g: cg };
+  });
+  // draw the centre kid of the group last so they overlap the friends
+  g.appendChild(clip);
+  const table = el('rect', { x: -220, y: 100, width: 440, height: 36, rx: 14, fill: '#fff', stroke: INK, 'stroke-width': SW });
+  const propG = el('g', {}, PROPS[c.prop]());
+  if (c.prop === 'laptop') { g.appendChild(propG); g.appendChild(table); }
+  else { g.appendChild(table); g.appendChild(propG); }
+  const lineEls = c.lines.map((txt, k) => {
+    const t = el('text', { 'text-anchor': 'middle', 'font-weight': 800, 'font-size': 40, fill: INK });
+    t.textContent = txt;
+    g.appendChild(t);
+    return t;
+  });
+  $('cards').appendChild(g);
+  return { g, charEls, propG, lineEls, table };
+});
+
+// shrink captions that would overflow the card
+function fitCaptions() {
+  for (const c of cardEls) {
+    let size = 40;
+    for (const t of c.lineEls) {
+      t.setAttribute('font-size', 40);
+      const w = t.getComputedTextLength();
+      if (w > 420) size = Math.min(size, Math.floor(40 * 420 / w));
+    }
+    c.lineEls.forEach(t => t.setAttribute('font-size', size));
+    c.fontSize = size;
+  }
+}
+
+// burst particles
+const burstEls = [];
+for (let i = 0; i < 14; i++) {
+  const col = CARDS[i % 4].color;
+  const b = el('circle', { r: 0, fill: col, stroke: INK, 'stroke-width': 6 });
+  $('burst').appendChild(b);
+  burstEls.push(b);
+}
+
+// finale: logo + everyone behind one long table
+const finale = $('finale');
+const logo = el('g');
+finale.appendChild(logo);
+const logoBlob = el('path', { d: 'M-440,20 C-450,-150 -200,-230 20,-225 C260,-220 450,-150 445,20 C440,190 230,250 0,245 C-230,240 -430,180 -440,20 Z', fill: '#fff', stroke: INK, 'stroke-width': SW });
+logo.appendChild(logoBlob);
+const WORDS = [{ text: 'Яндекс', size: 110, y: -40 }, { text: 'Спейс', size: 175, y: 140 }];
+const letterEls = [];
+WORDS.forEach((w, wi) => {
+  const probe = el('text', { 'font-size': w.size, 'font-weight': 900 });
+  probe.textContent = w.text;
+  logo.appendChild(probe);
+  const total = probe.getComputedTextLength();
+  const xs = [...w.text].map((_, k) => probe.getSubStringLength(0, k));
+  const ws = [...w.text].map((_, k) => probe.getSubStringLength(k, 1));
+  probe.remove();
+  [...w.text].forEach((ch, k) => {
+    const lg = el('g');
+    const t = el('text', { 'font-size': w.size, 'font-weight': 900, fill: INK, 'text-anchor': 'middle', 'letter-spacing': 0 });
+    t.textContent = ch;
+    lg.appendChild(t);
+    logo.appendChild(lg);
+    letterEls.push({ g: lg, x: -total / 2 + xs[k] + ws[k] / 2, y: w.y, word: wi, k });
+  });
+});
+const row = el('g', { 'clip-path': 'url(#rowClip)' });
+finale.appendChild(row);
+const rowChars = FINAL_ROW.map(name => {
+  const g = el('g', {}, CHAR[name]());
+  row.appendChild(g);
+  return g;
+});
+const longTable = el('rect', { x: 70, y: 1398, width: 940, height: 44, rx: 18, fill: '#fff', stroke: INK, 'stroke-width': SW });
+finale.appendChild(longTable);
+
+// ---------- render one frame at time t (seconds) ----------
+function render(t) {
+  // --- cards ---
+  cardEls.forEach((c, i) => {
+    const t0 = ENTER[i];
+    const pIn = prog(t, t0, 0.38);
+    let [x, y] = SLOTS[i];
+    let s = easeOutBack(pIn, 2.6);
+    let rot = (1 - easeOutBack(pIn)) * (i % 2 ? 14 : -14);
+
+    // shuffle 1 & 2: cards hop to another slot along an arc
+    const shuffle = (from, order, [st, du]) => {
+      const p = easeInOutCubic(prog(t, st, du));
+      const [tx, ty] = SLOTS[order[from]];
+      const [fx, fy] = SLOTS[from];
+      const arc = Math.sin(Math.PI * p);
+      return { x: lerp(fx, tx, p), y: lerp(fy, ty, p) - arc * 90, s: 1 - arc * 0.16, rot: arc * (i % 2 ? 10 : -10), slot: p >= 1 ? order[from] : from };
+    };
+    if (t >= SHUFFLE1[0]) {
+      const r = shuffle(i, ORDER1, SHUFFLE1);
+      ({ x, y } = r); s = r.s; rot = r.rot;
+      if (t >= SHUFFLE2[0]) {
+        const r2 = shuffle(ORDER1[i], ORDER2, SHUFFLE2);
+        ({ x, y } = r2); s = r2.s; rot = r2.rot;
+      }
+    }
+    // collapse into the centre with a spin
+    if (t >= COLLAPSE[0]) {
+      const slot = ORDER2[ORDER1[i]];
+      const p = prog(t, COLLAPSE[0], COLLAPSE[1]);
+      const e = easeInBack(p);
+      x = lerp(SLOTS[slot][0], 540, e);
+      y = lerp(SLOTS[slot][1], 950, e);
+      s = Math.max(0, 1 - e);
+      rot = e * (i % 2 ? 220 : -220);
+    }
+    c.g.setAttribute('transform', `translate(${x},${y}) rotate(${rot}) scale(${Math.max(0, s)})`);
+    c.g.style.display = s <= 0.001 ? 'none' : '';
+
+    // characters pop up from behind the table, then keep bouncing
+    c.charEls.forEach((ch, k) => {
+      const st = t0 + 0.08 + k * 0.06;
+      const p = easeOutBack(prog(t, st, 0.34), 2.4);
+      const bounce = hop(t, st + 0.34, 0.42, 16 + (k % 2) * 6);
+      const [gx, gs] = GROUP_LAYOUT[ch.name] || [0, 1];
+      const squash = 1 + 0.06 * Math.sin(Math.PI * clamp((t - st - 0.2) / 0.2));
+      ch.g.setAttribute('transform', `translate(${gx},${100 + (1 - p) * 420 + bounce}) scale(${gs * (2 - squash)},${gs * squash})`);
+    });
+
+    // caption lines spring up one after another
+    const fs = c.fontSize;
+    c.lineEls.forEach((ln, k) => {
+      const p = prog(t, t0 + 0.12 + k * 0.05, 0.3);
+      const e = easeOutBack(p, 2);
+      const ly = 200 + k * (fs + 10) + (c.lineEls.length === 2 ? 22 : 0);
+      ln.setAttribute('transform', `translate(0,${ly + (1 - e) * 40}) scale(${clamp(e, 0, 2)})`);
+      ln.setAttribute('opacity', clamp(p * 3));
+    });
+
+    // props
+    const pp = prog(t, t0 + 0.2, 0.45);
+    const pe = easeOutElastic(pp);
+    const name = CARDS[i].prop;
+    if (name === 'phone') {
+      const dev = c.propG.querySelector('.device'), bub = c.propG.querySelector('.bubble');
+      dev.setAttribute('transform', `translate(150,${-200 + hop(t, t0 + 0.5, 0.42, 14)}) rotate(${12 - 8 * pe}) scale(${pe})`);
+      const be = easeOutElastic(prog(t, t0 + 0.3, 0.45));
+      bub.setAttribute('transform', `translate(-150,-270) rotate(${-10 * Math.sin(t * 9)}) scale(${be})`);
+    } else if (name === 'pin') {
+      const body = c.propG.querySelector('.pinBody');
+      body.setAttribute('transform', `translate(0,${hop(t, t0 + 0.55, 0.42, 30)}) scale(${pe})`);
+      c.propG.querySelectorAll('.ring').forEach((r, k) => {
+        const ph = ((t - t0 - 0.4 - k * 0.3) % 0.6 + 0.6) % 0.6 / 0.6;
+        const on = t > t0 + 0.4;
+        r.setAttribute('rx', 30 + ph * 60); r.setAttribute('ry', 9 + ph * 18);
+        r.setAttribute('opacity', on ? (1 - ph) : 0);
+      });
+      c.propG.setAttribute('transform', 'translate(150,-230)');
+    } else if (name === 'party') {
+      c.propG.querySelectorAll('.confetti').forEach((cf, k) => {
+        const st = t0 + 0.25 + k * 0.05;
+        const p = clamp((t - st) / 0.9);
+        const ang = -Math.PI / 2 + (k - 2.5) * 0.45;
+        const dist = 150 * easeOutBack(clamp(p * 1.6), 1.2);
+        const cx = Math.cos(ang) * dist, cy = -210 + Math.sin(ang) * dist + 120 * p * p;
+        cf.setAttribute('cx', cx); cf.setAttribute('cy', cy);
+        cf.setAttribute('transform', `scale(1)`);
+        cf.setAttribute('opacity', t < st ? 0 : 1);
+      });
+    } else if (name === 'laptop') {
+      c.propG.setAttribute('transform', `translate(0,${100 + (1 - easeOutBack(prog(t, t0 + 0.14, 0.32), 2)) * 300})`);
+      const steam = c.propG.querySelector('.steam');
+      steam.setAttribute('transform', `translate(0,${-((t * 60) % 14)})`);
+      steam.setAttribute('opacity', t > t0 + 0.5 ? 0.5 + 0.5 * Math.sin(t * 14) : 0);
+    }
+  });
+
+  // --- yellow wipe + burst ---
+  const wipeP = easeInOutCubic(prog(t, 2.68, 0.35));
+  $('wipe').setAttribute('r', wipeP * 1300);
+  burstEls.forEach((b, k) => {
+    const p = prog(t, 2.74, 0.5);
+    const ang = k / burstEls.length * Math.PI * 2;
+    const d = 80 + 520 * (1 - Math.pow(1 - p, 3));
+    b.setAttribute('cx', 540 + Math.cos(ang) * d);
+    b.setAttribute('cy', 950 + Math.sin(ang) * d);
+    b.setAttribute('r', p > 0 && p < 1 ? (k % 2 ? 22 : 30) * (1 - p) : 0);
+  });
+
+  // --- logo ---
+  const lp = prog(t, 2.78, 0.6);
+  const ls = easeOutElastic(lp);
+  logo.setAttribute('transform', `translate(540,${700 + hop(t, 3.5, 0.5, 8)}) rotate(${(1 - ls) * -12}) scale(${ls})`);
+  logo.style.display = lp <= 0 ? 'none' : '';
+  letterEls.forEach((L, idx) => {
+    const st = 2.86 + idx * 0.035;
+    const p = prog(t, st, 0.32);
+    const e = easeOutBack(p, 3);
+    const j = hop(t, 3.55 + L.k * 0.04, 0.3, L.word ? 14 : 8) * (t < 3.85 + L.k * 0.04 ? 1 : 0);
+    L.g.setAttribute('transform', `translate(${L.x},${L.y + (1 - e) * -120 + j}) scale(${e})`);
+    L.g.setAttribute('opacity', p > 0 ? 1 : 0);
+  });
+
+  // --- everyone together behind the long table ---
+  rowChars.forEach((g, k) => {
+    const st = 3.0 + k * 0.06;
+    const p = easeOutBack(prog(t, st, 0.34), 2.4);
+    const bounce = hop(t, st + 0.34, 0.36, 12);
+    const x = 540 + (k - 2.5) * 156;
+    g.setAttribute('transform', `translate(${x},${1400 + (1 - p) * 320 + bounce}) scale(.54)`);
+  });
+  const tp = easeOutBack(prog(t, 2.92, 0.3), 2);
+  longTable.setAttribute('transform', `translate(540,1420) scale(${tp}) translate(-540,-1420)`);
+}
+
+// ---------- boot ----------
+const params = new URLSearchParams(location.search);
+window.render = render;
+document.fonts.ready.then(() => {
+  fitCaptions();
+  if (params.has('capture')) {
+    document.body.classList.add('capture');
+    render(0);
+    window.ready = true;
+  } else {
+    const t0 = performance.now();
+    const loop = now => {
+      const t = ((now - t0) / 1000) % (DURATION + 1.0); // 1s pause on the logo before looping
+      render(Math.min(t, DURATION));
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  }
+});
+</script>
+</body>
+</html>
