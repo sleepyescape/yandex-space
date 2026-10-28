@@ -117,7 +117,8 @@ button { font-family: inherit; color: inherit; }
   transition: box-shadow .2s;
 }
 .searchbar:hover { box-shadow: 0 8px 28px rgba(30, 35, 45, .2); }
-.brand-dot { width: 34px; height: 34px; border-radius: 10px; flex: none; }
+.brand-dot { width: 36px; height: 36px; border-radius: 50%; flex: none; }
+.app-icon img, .brand-dot img { display: block; width: 100%; height: 100%; }
 .search-ic { color: var(--text); }
 .search-text { flex: 1; font-size: 17px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .search-text.placeholder { color: var(--text-3); }
@@ -304,9 +305,9 @@ button { font-family: inherit; color: inherit; }
 .overlay.open .picker-card { transform: none; }
 .picker-close { position: absolute; right: 18px; top: 18px; background: var(--bg-2); box-shadow: none; }
 .picker-head { display: flex; align-items: center; gap: 14px; }
-.app-icon { width: 54px; height: 54px; border-radius: 16px; flex: none; }
-.wordmark { font-size: 23px; font-weight: 500; letter-spacing: -.3px; }
-.wordmark b { font-weight: 700; }
+.app-icon { width: 58px; height: 58px; border-radius: 50%; flex: none; }
+.wordmark { font-size: 25px; font-weight: 700; letter-spacing: -.4px; }
+.wordmark b { font-weight: 700; color: #FDBF1F; }
 .tagline { font-size: 14px; color: var(--text-2); margin-top: 2px; }
 .picker-card h1 { margin: 24px 0 16px; font-size: 28px; font-weight: 700; letter-spacing: -.4px; }
 .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -374,7 +375,7 @@ button { font-family: inherit; color: inherit; }
 .push-card { width: 370px; background: rgba(255, 255, 255, .97); border-radius: 20px; padding: 14px 16px; box-shadow: 0 16px 40px rgba(20, 25, 35, .25); animation: pushIn .5s cubic-bezier(.3, 1.4, .5, 1); }
 @keyframes pushIn { from { transform: translateX(120%); } }
 .push-head { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-2); }
-.push-head .app-icon { width: 22px; height: 22px; border-radius: 7px; }
+.push-head .app-icon { width: 22px; height: 22px; }
 .push-title { margin-top: 8px; font-size: 15.5px; font-weight: 700; }
 .push-text { margin-top: 3px; font-size: 13.5px; color: #3B3A38; line-height: 1.4; }
 .push-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
@@ -392,3 +393,11 @@ button { font-family: inherit; color: inherit; }
 ::-webkit-scrollbar { width: 10px; }
 ::-webkit-scrollbar-thumb { background: #DDDAD5; border-radius: 10px; border: 3px solid #fff; }
 ::-webkit-scrollbar-track { background: transparent; }
+
+/* ── Заставка ─────────────────────────────────────── */
+#splash { position: absolute; inset: 0; z-index: 60; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; transition: opacity .6s ease, visibility .6s; }
+#splash img { width: 170px; height: 170px; animation: splashIn .7s cubic-bezier(.3, 1.4, .5, 1) both; }
+.splash-word { font-size: 46px; font-weight: 700; letter-spacing: -1px; animation: itemIn .6s .25s var(--ease) both; }
+.splash-word b { color: #FDBF1F; }
+#splash.gone { opacity: 0; visibility: hidden; }
+@keyframes splashIn { from { transform: scale(.6) rotate(-20deg); opacity: 0; } }

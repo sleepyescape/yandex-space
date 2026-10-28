@@ -4,10 +4,7 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
-  const APP_ICON = `<svg viewBox="0 0 64 64" width="100%" height="100%"><rect width="64" height="64" rx="18" fill="#FFDB4D"/>
-    <path d="M32 10c-9.9 0-18 7.8-18 17.5C14 40.6 32 55 32 55s18-14.4 18-27.5C50 17.8 41.9 10 32 10z" fill="#21201F"/>
-    <rect x="22.5" y="22" width="19" height="4.2" rx="2.1" fill="#fff"/><rect x="30.4" y="25" width="3.2" height="10" rx="1.2" fill="#fff"/>
-    <rect x="26" y="34" width="12" height="3" rx="1.5" fill="#fff"/><circle cx="51" cy="13" r="5" fill="#FC3F1D"/></svg>`;
+  const APP_ICON = '<img src="assets/icon.png" alt="" draggable="false">';
 
   const CAT = { coffee: '#2C6CF6', cowork: '#2C6CF6', bakery: '#2C6CF6', food: '#2EA84F', restaurant: '#2EA84F', noodles: '#2EA84F', garden: '#2EA84F', bar: '#8B5CF6' };
   const SC_COLORS = {
@@ -865,11 +862,12 @@
   const [cx, cy] = map.center;
   Object.assign(view, viewFor(cx, cy - 40, home.s * 0.78));
   applyView();
-  requestAnimationFrame(() => {
+  setTimeout(() => {
+    $('#splash').classList.add('gone');
     $('#app').classList.remove('booting');
     animateTo(home, 1400);
     setTimeout(openPicker, 900);
-  });
+  }, 1500);
 
   // Для автоматических скриншотов
   window.__ys = { state, chooseScenario, openCard, closeCard, openPicker, refreshAll };
