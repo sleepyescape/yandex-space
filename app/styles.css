@@ -400,4 +400,13 @@ button { font-family: inherit; color: inherit; }
 .splash-word { font-size: 46px; font-weight: 700; letter-spacing: -1px; animation: itemIn .6s .25s var(--ease) both; }
 .splash-word b { color: #FDBF1F; }
 #splash.gone { opacity: 0; visibility: hidden; }
+/* Видео-интро поверх статичной заставки; если видео не запустилось — остаётся статичная */
+#intro { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #fff; }
+#splash:not(.intro-off) img, #splash:not(.intro-off) .splash-word { visibility: hidden; animation: none; }
+#splash.intro-off #intro, #splash.intro-off .intro-skip { display: none; }
+.intro-skip {
+  position: absolute; right: 28px; bottom: 28px; height: 44px; padding: 0 20px; border: 0; border-radius: 14px;
+  background: rgba(33, 32, 31, .08); font-size: 15px; font-weight: 600; cursor: pointer; transition: background .2s;
+}
+.intro-skip:hover { background: rgba(33, 32, 31, .14); }
 @keyframes splashIn { from { transform: scale(.6) rotate(-20deg); opacity: 0; } }

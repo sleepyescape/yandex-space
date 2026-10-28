@@ -8,7 +8,11 @@
 </head>
 <body>
   <div id="app" class="booting">
-    <div id="splash"><img src="assets/icon.png" alt=""><div class="splash-word">Яндекс <b>Спейс</b></div></div>
+    <div id="splash">
+      <img src="assets/icon.png" alt=""><div class="splash-word">Яндекс <b>Спейс</b></div>
+      <video id="intro" src="assets/intro.mp4" playsinline preload="auto"></video>
+      <button id="introSkip" class="intro-skip" type="button">Пропустить</button>
+    </div>
     <!-- Слой 0: карта -->
     <div id="viewport">
       <div id="stage"><svg id="map" xmlns="http://www.w3.org/2000/svg"></svg></div>

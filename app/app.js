@@ -862,12 +862,33 @@
   const [cx, cy] = map.center;
   Object.assign(view, viewFor(cx, cy - 40, home.s * 0.78));
   applyView();
-  setTimeout(() => {
-    $('#splash').classList.add('gone');
+  // Интро-ролик (intro/), по окончании или по «Пропустить» открываем карту
+  const splash = $('#splash');
+  const intro = $('#intro');
+  let started = false;
+  function startApp() {
+    if (started) return;
+    started = true;
+    intro.pause();
+    splash.classList.add('gone');
     $('#app').classList.remove('booting');
     animateTo(home, 1400);
     setTimeout(openPicker, 900);
-  }, 1500);
+  }
+  function withoutIntro() {
+    if (started || splash.classList.contains('intro-off')) return;
+    splash.classList.add('intro-off');
+    setTimeout(startApp, 1500);
+  }
+  intro.addEventListener('ended', startApp);
+  intro.addEventListener('error', withoutIntro);
+  $('#introSkip').onclick = startApp;
+  addEventListener('keydown', (e) => {
+    if (!started && ['Escape', 'Enter', ' '].includes(e.key)) { e.preventDefault(); startApp(); }
+  });
+  // без жеста пользователя браузер может запретить звук — тогда играем без него
+  intro.play().catch(() => { intro.muted = true; intro.play().catch(withoutIntro); });
+  setTimeout(startApp, 15000); // страховка, если видео зависло
 
   // Для автоматических скриншотов
   window.__ys = { state, chooseScenario, openCard, closeCard, openPicker, refreshAll };
