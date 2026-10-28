@@ -6,7 +6,6 @@ const path = require('path');
 
 const out = process.argv[2] || path.join(__dirname, 'yandex-space-intro.mp4');
 const fps = Number(process.argv[3] || 60);
-const DURATION = 4.0;
 
 (async () => {
   const browser = await chromium.launch();
@@ -18,6 +17,7 @@ const DURATION = 4.0;
     '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '16', '-preset', 'slow', '-movflags', '+faststart', out],
     { stdio: ['pipe', 'inherit', 'inherit'] });
 
+  const DURATION = await page.evaluate(() => DURATION);
   const frames = Math.round(DURATION * fps);
   for (let f = 0; f <= frames; f++) {
     await page.evaluate(t => window.render(t), f / fps);

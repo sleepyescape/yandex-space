@@ -196,13 +196,14 @@ const CARDS = [
 const CS = 0.86;                               // card scale on the 16:9 stage
 const SLOTS = [[286, 600], [735, 600], [1184, 600], [1633, 600]];
 const CENTER = [960, 600];
-const ENTER = [0.05, 0.40, 0.75, 1.10];       // card entrance times
-const SHUFFLE1 = [1.90, 0.30], SHUFFLE2 = [2.20, 0.30], COLLAPSE = [2.50, 0.30];
+const ENTER = [0.10, 0.90, 1.70, 2.50];       // card entrance times: ~0.8s each to read the caption
+const F = 2.7;                                // everything after the cards starts this much later (reading pause)
+const SHUFFLE1 = [F + 1.90, 0.30], SHUFFLE2 = [F + 2.20, 0.30], COLLAPSE = [F + 2.50, 0.30];
 const ORDER1 = [2, 3, 0, 1];                  // halves leapfrog each other
 const ORDER2 = [1, 0, 3, 2];                  // then neighbours swap
 const GROUP_LAYOUT = { bob: [-100, 0.74], curly: [100, 0.78] };
 const FINAL_ROW = ['karina', 'zarina', 'bob', 'curly', 'longhair'];
-const DURATION = 4.0;
+const DURATION = 7.2;
 
 // ---------- build ----------
 const NS = 'http://www.w3.org/2000/svg';
@@ -428,10 +429,10 @@ function render(t) {
   });
 
   // --- yellow wipe, then white (the app's splash background) + burst ---
-  $('wipe').setAttribute('r', easeInOutCubic(prog(t, 2.62, 0.32)) * 1150);
-  $('wipe2').setAttribute('r', easeInOutCubic(prog(t, 2.80, 0.32)) * 1150);
+  $('wipe').setAttribute('r', easeInOutCubic(prog(t, F + 2.62, 0.32)) * 1150);
+  $('wipe2').setAttribute('r', easeInOutCubic(prog(t, F + 2.80, 0.32)) * 1150);
   burstEls.forEach((b, k) => {
-    const p = prog(t, 2.74, 0.5);
+    const p = prog(t, F + 2.74, 0.5);
     const ang = k / burstEls.length * Math.PI * 2;
     const d = 80 + 640 * (1 - Math.pow(1 - p, 3));
     b.setAttribute('cx', CENTER[0] + Math.cos(ang) * d * 1.3);
@@ -442,27 +443,27 @@ function render(t) {
   });
 
   // --- logo: icon spins in like the app splash, letters hop in one by one ---
-  const ip = prog(t, 2.86, 0.55);
+  const ip = prog(t, F + 2.86, 0.55);
   const ie = easeOutElastic(ip);
-  logoIcon.setAttribute('transform', `translate(${logoIconX},${LOGO_Y + hop(t, 3.55, 0.4, 10)}) rotate(${(1 - ie) * -200}) scale(${ie})`);
+  logoIcon.setAttribute('transform', `translate(${logoIconX},${LOGO_Y + hop(t, F + 3.55, 0.6, 10)}) rotate(${(1 - ie) * -200}) scale(${ie})`);
   logoIcon.style.display = ip <= 0 ? 'none' : '';
   letterEls.forEach((L, idx) => {
-    const p = prog(t, 2.96 + idx * 0.03, 0.32);
+    const p = prog(t, F + 2.96 + idx * 0.03, 0.32);
     const e = easeOutBack(p, 3);
-    const j = t < 3.9 ? hop(t, 3.55 + idx * 0.03, 0.3, 14) : 0;
+    const j = t < F + 3.9 ? hop(t, F + 3.55 + idx * 0.03, 0.3, 14) : 0;
     L.g.setAttribute('transform', `translate(${L.x},${LOGO_Y + (1 - e) * -140 + j}) scale(${e})`);
     L.g.setAttribute('opacity', p > 0 ? 1 : 0);
   });
 
   // --- everyone together behind the long table ---
   rowChars.forEach((g, k) => {
-    const st = 3.08 + k * 0.06;
+    const st = F + 3.08 + k * 0.06;
     const p = easeOutBack(prog(t, st, 0.34), 2.4);
     const bounce = hop(t, st + 0.34, 0.36, 12);
     const x = 960 + (k - 2) * 180;
     g.setAttribute('transform', `translate(${x},${930 + (1 - p) * 300 + bounce}) scale(.6)`);
   });
-  const tp = easeOutBack(prog(t, 3.0, 0.3), 2);
+  const tp = easeOutBack(prog(t, F + 3.0, 0.3), 2);
   longTable.setAttribute('transform', `translate(960,948) scale(${tp}) translate(-960,-948)`);
 }
 
