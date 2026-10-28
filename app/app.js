@@ -22,6 +22,7 @@
     notify: {},
     liked: {},
     hoverTip: null,
+    sheet: 'half',
   };
 
   // ── Время ────────────────────────────────────────────────
@@ -120,11 +121,41 @@
   const markerEls = {};
   let userEl;
 
+  // ── Телефон: панель становится нижней шторкой ─────────────
+  const phoneMq = matchMedia('(max-width: 700px)');
+  const isPhone = () => phoneMq.matches;
+  const safeProbe = document.createElement('div');
+  safeProbe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)';
+  document.body.appendChild(safeProbe);
+  const safe = () => { const cs = getComputedStyle(safeProbe); return { top: parseFloat(cs.paddingTop) || 0, bottom: parseFloat(cs.paddingBottom) || 0 }; };
+  function sheetHeight() {
+    if (!isPhone() || !state.scenario) return 0;
+    if (state.venue) return Math.round(innerHeight * 0.8);
+    if (state.sheet === 'collapsed') return ($('#results .res-head')?.offsetHeight || 110) + 18 + safe().bottom;
+    return Math.round(innerHeight * 0.46);
+  }
+  function updateSheet() {
+    $('#app').style.setProperty('--sheet-h', `${sheetHeight()}px`);
+    $('#app').classList.toggle('card-open', !!state.venue);
+    $('#panel').classList.toggle('collapsed', state.sheet === 'collapsed' && !state.venue);
+  }
+  function setSheet(mode) {
+    state.sheet = mode;
+    updateSheet();
+    if (!state.venue) animateTo(clampView(homeView()), 500);
+  }
+
   function region() {
+    if (isPhone()) {
+      let top = safe().top + 8;
+      if (state.scenario && !state.venue) top = Math.max($('#searchbar').getBoundingClientRect().bottom, $('#chips').getBoundingClientRect().bottom) + 8;
+      return { x: 0, y: top, w: innerWidth, h: Math.max(120, innerHeight - sheetHeight() - top) };
+    }
     const left = state.scenario ? 16 + 412 + 16 : 0;
     return { x: left, y: 0, w: innerWidth - left - (state.scenario ? 70 : 0), h: innerHeight };
   }
   function fitScale() {
+    if (isPhone()) return (innerWidth / (map.width - 160)) * 1.9;
     const r = region();
     return Math.min(r.w / (map.width - 160), r.h / (map.height - 120)) * 1.12;
   }
@@ -152,7 +183,8 @@
       const right = [x + 16, y - 56, m._lw || 180, 48];
       const left = [x - 16 - (m._lw || 180), y - 56, m._lw || 180, 48];
       let mode = '';
-      if (hit(pin) || hit(right)) mode = !hit(left) && !hit(pin) ? 'left' : 'compact';
+      const offRight = right[0] + right[2] > innerWidth - 8;
+      if (hit(pin) || hit(right) || offRight) mode = !hit(left) && !hit(pin) ? 'left' : 'compact';
       m.classList.toggle('left', mode === 'left');
       m.classList.toggle('compact', mode === 'compact');
       placed.push(pin);
@@ -198,7 +230,7 @@
   function focusVenue(v) {
     const [ax, ay] = map.anchors[v.id];
     const s = Math.max(view.s, fitScale() * 1.55);
-    animateTo(clampView(viewFor(ax, ay, s, 60)), 800);
+    animateTo(clampView(viewFor(ax, ay, s, isPhone() ? 34 : 60)), 800);
   }
 
   function buildMarkers() {
@@ -214,8 +246,8 @@
       m.innerHTML = `<div class="mk"><div class="pin" style="background:${v.color}">${I(v.icon, 22)}</div><div class="mlabel"></div></div>`;
       const mk = $('.mk', m);
       mk.addEventListener('click', (e) => { e.stopPropagation(); openCard(v.id); });
-      mk.addEventListener('mouseenter', () => hoverVenue(v.id, true));
-      mk.addEventListener('mouseleave', () => hoverVenue(v.id, false));
+      mk.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && hoverVenue(v.id, true));
+      mk.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && hoverVenue(v.id, false));
       mk.addEventListener('pointerdown', (e) => e.stopPropagation());
       markersEl.appendChild(m);
       markerEls[v.id] = m;
@@ -267,24 +299,46 @@
     $(`.res-item[data-id="${id}"]`)?.classList.toggle('hover', on);
   }
 
-  // Перетаскивание и масштаб
+  // Перетаскивание и масштаб (мышью, пальцем и щипком двумя пальцами)
   (() => {
+    const pts = new Map();
     let drag = null;
+    // Запоминаем исходное положение для текущего набора пальцев
+    const start = () => {
+      const p = [...pts.values()];
+      const mx = p.reduce((a, q) => a + q.x, 0) / p.length, my = p.reduce((a, q) => a + q.y, 0) / p.length;
+      const d = p.length > 1 ? Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) : 0;
+      drag = { mx, my, d, s: view.s, tx: view.tx, ty: view.ty };
+    };
     viewport.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
       cancelAnimationFrame(anim);
-      drag = { x: e.clientX, y: e.clientY, tx: view.tx, ty: view.ty };
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       viewport.setPointerCapture(e.pointerId);
       viewport.classList.add('dragging');
+      start();
     });
     viewport.addEventListener('pointermove', (e) => {
-      if (!drag) return;
-      view.tx = drag.tx + e.clientX - drag.x;
-      view.ty = drag.ty + e.clientY - drag.y;
+      if (!drag || !pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const p = [...pts.values()];
+      const mx = p.reduce((a, q) => a + q.x, 0) / p.length, my = p.reduce((a, q) => a + q.y, 0) / p.length;
+      let s = drag.s;
+      if (p.length > 1 && drag.d) {
+        const fs = fitScale();
+        s = Math.min(fs * 2.8, Math.max(fs * 0.8, drag.s * Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) / drag.d));
+      }
+      view.s = s;
+      view.tx = mx - (drag.mx - drag.tx) * (s / drag.s);
+      view.ty = my - (drag.my - drag.ty) * (s / drag.s);
       clampView(view);
       applyView();
     });
-    const end = () => { drag = null; viewport.classList.remove('dragging'); };
+    const end = (e) => {
+      pts.delete(e.pointerId);
+      if (pts.size) start();
+      else { drag = null; viewport.classList.remove('dragging'); }
+    };
     viewport.addEventListener('pointerup', end);
     viewport.addEventListener('pointercancel', end);
     viewport.addEventListener('wheel', (e) => {
@@ -368,8 +422,8 @@
           <div class="res-meta2">${extra}</div>
         </div>${badge}`;
       it.onclick = () => openCard(v.id);
-      it.onmouseenter = () => hoverVenue(v.id, true);
-      it.onmouseleave = () => hoverVenue(v.id, false);
+      it.onpointerenter = (e) => e.pointerType === 'mouse' && hoverVenue(v.id, true);
+      it.onpointerleave = (e) => e.pointerType === 'mouse' && hoverVenue(v.id, false);
       ul.appendChild(it);
     });
     if (sc.id === 'company') bindStepper(el, () => state.guests, (g) => { state.guests = g; refreshAll(); }, 2, 12);
@@ -388,6 +442,7 @@
     if (!state.scenario) chooseScenario('nocall', true);
     renderCard(true);
     $('#panel').classList.add('card-open');
+    updateSheet();
     updateMarkers();
     focusVenue(v);
   }
@@ -397,6 +452,7 @@
     $('#panel').classList.remove('card-open');
     updateMarkers();
     renderResults();
+    updateSheet();
     animateTo(homeView(), 700);
   }
 
@@ -774,6 +830,7 @@
     updateMarkers();
     if (state.venue) renderCard();
     renderBookingsPill();
+    updateSheet();
   }
 
   // ── Выбор цели ───────────────────────────────────────────
@@ -816,6 +873,7 @@
   function chooseScenario(id, silent = false) {
     const first = !state.scenario;
     state.scenario = id;
+    state.sheet = 'half';
     closePicker();
     $('#panel').classList.remove('hidden');
     if (state.venue && !silent) closeCard();
@@ -845,7 +903,37 @@
     const [ux, uy] = map.P(USER_AT[0], USER_AT[1]);
     animateTo(clampView(viewFor(ux, uy, Math.max(view.s, fitScale() * 1.4))), 700);
   };
-  addEventListener('resize', () => { Object.assign(view, clampView(homeView())); applyView(); });
+  addEventListener('resize', () => { updateSheet(); Object.assign(view, clampView(homeView())); applyView(); });
+
+  // Шторка на телефоне: тянем за верхний край вниз — свернуть или закрыть карточку, вверх — развернуть
+  (() => {
+    const grab = $('#sheetGrab');
+    const panel = $('#panel');
+    let g = null;
+    grab.addEventListener('pointerdown', (e) => {
+      g = { y: e.clientY, dy: 0 };
+      grab.setPointerCapture(e.pointerId);
+      panel.classList.add('grabbing');
+    });
+    grab.addEventListener('pointermove', (e) => {
+      if (!g) return;
+      g.dy = e.clientY - g.y;
+      panel.style.transform = `translateY(${Math.max(-30, g.dy)}px)`;
+    });
+    const end = () => {
+      if (!g) return;
+      const { dy } = g;
+      g = null;
+      panel.classList.remove('grabbing');
+      panel.style.transform = '';
+      if (state.venue) { if (dy > 80) closeCard(); return; }
+      if (Math.abs(dy) < 6) setSheet(state.sheet === 'collapsed' ? 'half' : 'collapsed');
+      else if (dy > 50) setSheet('collapsed');
+      else if (dy < -30) setSheet('half');
+    };
+    grab.addEventListener('pointerup', end);
+    grab.addEventListener('pointercancel', end);
+  })();
 
   // ── Старт ────────────────────────────────────────────────
   $$('.app-icon, .brand-dot').forEach((e) => (e.innerHTML = APP_ICON));
@@ -868,6 +956,11 @@
     animateTo(home, 1400);
     setTimeout(openPicker, 900);
   }, 1500);
+
+  // Веб-версия: офлайн-кэш и установка на экран «Домой»
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
 
   // Для автоматических скриншотов
   window.__ys = { state, chooseScenario, openCard, closeCard, openPicker, refreshAll };

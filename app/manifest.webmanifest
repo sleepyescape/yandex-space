@@ -1,0 +1,16 @@
+{
+  "name": "Яндекс Спейс",
+  "short_name": "Спейс",
+  "description": "Свободные столики в кафе Казани в реальном времени — учебный прототип",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icon.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

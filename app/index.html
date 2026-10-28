@@ -3,7 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FFFFFF">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Спейс">
+  <meta name="format-detection" content="telephone=no">
   <title>Яндекс Спейс</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -25,6 +35,7 @@
       </div>
       <div class="chips" id="chips"></div>
       <section id="panel" class="hidden">
+        <div class="sheet-grab" id="sheetGrab" aria-hidden="true"></div>
         <div id="results" class="layer"></div>
         <div id="card" class="layer"></div>
       </section>
